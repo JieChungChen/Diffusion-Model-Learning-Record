@@ -73,7 +73,7 @@ class DDPMTrainer(nn.Module):
 
 
 class DDPM_Sampler(nn.Module):
-    def __init__(self, model, beta_1, beta_T, beta_scdl, T):
+    def __init__(self, model, beta_1=1e-4, beta_T=0.02, beta_scdl='linear', T=1000):
         """
         Vanilla DDPM inference時使用的策略
         """
@@ -85,25 +85,26 @@ class DDPM_Sampler(nn.Module):
         alphas_bar = torch.cumprod(alphas, dim=0)
         alphas_bar_prev = torch.cat((torch.ones(1), alphas_bar[:-1]))
 
-        self.register_buffer('betas', betas)
-        self.register_buffer('alphas_bar', alphas_bar)
-        self.register_buffer('alphas_bar_prev', alphas_bar_prev)
         # for posterior q(x_{t-1} | x_t, x_0)
         posterior_variance = betas * (1. - alphas_bar_prev) / (1. - alphas_bar) # beta_wave_t
         self.register_buffer('coeff1', torch.sqrt(1. / alphas))
         self.register_buffer('coeff2', self.coeff1 * (1. - alphas) / torch.sqrt(1. - alphas_bar))
         self.register_buffer('posterior_log_variance_clipped', torch.log(np.maximum(posterior_variance, 1e-20)))
-
-    def posterior_mean(self, x_t, t, eps):
-        assert x_t.shape == eps.shape
-        return self.coeff1[t] * x_t - self.coeff2[t] * eps
     
-    def p_mean_variance(self, condit, x_t, t):
+    def p_mean_variance(self, x_t, t, condit=None):
+        """
+        計算reverse diffusion條件機率中, 解析解對應的均值及方差
+        """
         B = x_t.shape[0]
         tensor_t = torch.ones((B,), device=x_t.device) * t
-        eps = self.model(torch.cat([condit, x_t], dim=1), tensor_t)
-        mean = self.posterior_mean(x_t, t, eps)
+        if condit is not None:
+            x_t = torch.cat([condit, x_t], dim=1)
+        eps = self.model(x_t, tensor_t)
+
+        assert x_t.shape == eps.shape
+        mean = self.coeff1[t] * x_t - self.coeff2[t] * eps
         log_var = self.posterior_log_variance_clipped[t]
+
         return mean, log_var
 
     def forward(self, condit, x_T, save_process=False):

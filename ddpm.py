@@ -75,8 +75,7 @@ class DDPMTrainer(nn.Module):
 class DDPM_Sampler(nn.Module):
     def __init__(self, model, beta_1, beta_T, beta_scdl, T):
         """
-        Sampling process of Denoising Diffusion Probabilistic Models (DDPM)
-        All the calculations are base on https://arxiv.org/pdf/2006.11239
+        Vanilla DDPM inference時使用的策略
         """
         super().__init__()
         self.model = model

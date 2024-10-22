@@ -8,6 +8,10 @@
 內容對應的code就在[ddpm.py](ddpm.py)  
 包含最重要的兩個工具```DDPM_Trainer```跟```DDPM_Sampler```
 
+## Denoising Diffusion Implicit Models (DDIM)  
+
+Code已經整理好了，但文檔還沒寫完，待更新
+
 
 ## 其他repo.推薦  
 

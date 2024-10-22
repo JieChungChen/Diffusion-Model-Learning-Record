@@ -4,7 +4,9 @@
 
 ## Denoising Diffusion Probabilistic Models (DDPM)  
 
-附上我在hackmd上的筆記: [盡量白話解釋DDPM基礎](https://hackmd.io/@jackson29/rkpmHlK6C)。內容對應的code就在[ddpm.py](ddpm.py)
+附上我在hackmd上的筆記: [盡量白話解釋DDPM基礎](https://hackmd.io/@jackson29/rkpmHlK6C)  
+內容對應的code就在[ddpm.py](ddpm.py)  
+包含最重要的兩個工具```DDPM_Trainer```跟```DDPM_Sampler```
 
 
 ## 其他repo.推薦  

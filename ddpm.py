@@ -34,7 +34,7 @@ def make_beta_schedule(schedule, n_timestep, beta_0=1e-4, beta_T=2e-2, cosine_s=
     return betas
 
 
-class DDPMTrainer(nn.Module):
+class DDPM_Trainer(nn.Module):
     """
     Vanilla DDPM訓練時使用的策略
     """

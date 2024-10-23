@@ -12,6 +12,13 @@
 
 Code已經整理好了，但文檔還沒寫完，待更新
 
+## Latent Diffusion
+
+整理了部分Latent Diffusion作者開源的[code](https://github.com/CompVis/latent-diffusion)，放在[latent_diffsion_VAE](latent_diffsion_VAE)資料夾裡  
+因為他們的code真的挺亂的，內部又盤根錯雜，整理起來很吃力  
+目前把VAE的部份給分離了出來並用自己的習慣重新編輯了  
+確認過在我自己的資料上訓練正常，有空再弄得可讀性更好一點  
+為了盡量避免改動到原作者的設定，我也同樣使用```pytorch lightning```做訓練
 
 ## 其他repo.推薦  
 

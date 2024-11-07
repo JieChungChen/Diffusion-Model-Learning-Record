@@ -1,10 +1,8 @@
 import torch
+import torch.nn as nn
 import numpy as np
-import pytorch_lightning as pl
-from torch.utils.data import DataLoader
 
 from model import Encoder, Decoder
-from data_preprocess import NanoCT_Dataset
 from losses import LPIPSWithDiscriminator
 
 
@@ -49,24 +47,23 @@ class DiagonalGaussianDistribution(object):
         return self.mean
     
 
-class AutoencoderKL(pl.LightningModule):
+class AutoencoderKL(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.encoder = Encoder(**vars(config))
         self.decoder = Decoder(**vars(config))
-        self.loss = LPIPSWithDiscriminator(disc_start=50001, kl_weight=1e-6, disc_weight=0.5)
+        if config.vae_inference:
+            self.loss = torch.nn.Identity()
+        else:
+            self.loss = LPIPSWithDiscriminator(disc_start=config.disc_start, kl_weight=1e-6, disc_weight=0.5)
         self.quant_conv = torch.nn.Conv2d(2*config.z_channels, 2*config.embed_dim, 1)
         self.post_quant_conv = torch.nn.Conv2d(config.embed_dim, config.z_channels, 1)
-        self.data_dir = config.data_dir
-        self.resolution = config.resolution
-        self.batch_size = config.batch_size
-        self.automatic_optimization = False
 
         if config.ckpt_path is not None:
             self.init_from_ckpt(config.ckpt_path, ignore_keys=[])
 
     def init_from_ckpt(self, path, ignore_keys=list()):
-        sd = torch.load(path, map_location="cpu")["state_dict"]
+        sd = torch.load(path, map_location="cpu")
         keys = list(sd.keys())
         for k in keys:
             for ik in ignore_keys:
@@ -95,55 +92,14 @@ class AutoencoderKL(pl.LightningModule):
             z = posterior.mode()
         dec = self.decode(z)
         return dec, posterior
-
-    def train_dataloader(self):
-        trn_set = NanoCT_Dataset(self.data_dir, img_size=self.resolution)
-        return DataLoader(trn_set, batch_size=self.batch_size, num_workers=4, shuffle=True, pin_memory=False, persistent_workers=True) 
     
-    def get_input(self, batch):
-        batch = batch.to(memory_format=torch.contiguous_format).float()
-        return batch
-
-    def training_step(self, batch, batch_idx):
-        inputs = self.get_input(batch)
-        reconstructions, posterior = self(inputs)
-        g_opt, d_opt = self.optimizers()
-        # train encoder+decoder+logvar
-        aeloss, log_dict_ae = self.loss(inputs, reconstructions, posterior, 0, self.global_step,
-                                        last_layer=self.get_last_layer(), split="train")
-        self.log("aeloss", aeloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-        self.log_dict(log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=False)
-        g_opt.zero_grad()
-        self.manual_backward(aeloss)
-        g_opt.step()
-
-        # train the discriminator
-        discloss, log_dict_disc = self.loss(inputs, reconstructions, posterior, 1, self.global_step,
-                                            last_layer=self.get_last_layer(), split="train")
-        self.log("discloss", discloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-        self.log_dict(log_dict_disc, prog_bar=False, logger=True, on_step=True, on_epoch=False)
-        d_opt.zero_grad()
-        self.manual_backward(discloss)
-        d_opt.step()
-
-    def configure_optimizers(self):
-        lr = self.learning_rate
-        opt_ae = torch.optim.Adam(list(self.encoder.parameters())+
-                                  list(self.decoder.parameters())+
-                                  list(self.quant_conv.parameters())+
-                                  list(self.post_quant_conv.parameters()),
-                                  lr=lr, betas=(0.5, 0.9))
-        opt_disc = torch.optim.Adam(self.loss.discriminator.parameters(),
-                                    lr=lr, betas=(0.5, 0.9))
-        return opt_ae, opt_disc
-
     def get_last_layer(self):
         return self.decoder.conv_out.weight
     
     @torch.no_grad()
     def log_images(self, x, only_inputs=False):
         log = dict()
-        x = x.to(self.device)
+        x = x.cuda()
         if not only_inputs:
             xrec, posterior = self(x)
             log["samples"] = self.decode(torch.randn_like(posterior.sample()))

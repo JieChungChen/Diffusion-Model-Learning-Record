@@ -20,6 +20,13 @@ Code已經整理好了，但文檔還沒寫完，待更新
 確認過在我自己的資料上訓練正常，有空再弄得可讀性更好一點  
 為了盡量避免改動到原作者的設定，我也同樣使用```pytorch lightning```做訓練
 
+### VAE
+
+我只使用了AutoncoderKL，因為VQVAE實在是怎麼train都很爛，附上我用NanoCT資料的重建結果:
+![](figures/vae_result_1.png)
+![](figures/vae_result_2.png)
+
+
 ## 其他repo.推薦  
 
 這邊是我看到Github上面可讀性較高、適合初學者看的repo.

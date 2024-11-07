@@ -22,7 +22,7 @@ Code已經整理好了，但文檔還沒寫完，待更新
 
 ### VAE
 
-我只使用了AutoncoderKL，因為VQVAE實在是怎麼train都很爛，附上我用NanoCT資料的重建結果:
+我只使用了AutoencoderKL，因為VQVAE實在是怎麼train都很爛，附上我用NanoCT資料的重建結果:
 ![](figures/vae_result_1.png)
 ![](figures/vae_result_2.png)
 
